@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Library</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="member">
+<header class="top"><div class="in">
+  <div class="logo">Library</div>
+  <span class="avatar" id="avatar" aria-hidden="true"></span>
+  <span class="muted" id="who"></span>
+  <button class="btn ghost sm" onclick="logout()">Log out</button>
+</div></header>
+<main class="wrap">
+  <section class="hero"><h1>Browse books</h1><p id="hello"></p></section>
+  <div class="tools">
+    <input type="search" id="search" placeholder="Search title or author" aria-label="Search books">
+    <select id="sort" aria-label="Sort books"><option value="az">Title A to Z</option><option value="za">Title Z to A</option><option value="new">Newest first</option></select>
+    <div class="chips" id="chips" role="group" aria-label="Categories"></div>
+  </div>
+  <p class="count" id="count" aria-live="polite"></p>
+  <div class="grid" id="grid"></div>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script src="../js/config.js"></script>
+<script src="../js/mock-api.js"></script>
+<script src="../js/common.js"></script>
+<script>
+  guard();
+  $('who').textContent = Auth.name;
+  $('avatar').textContent = (Auth.name || '?')[0].toUpperCase();
+  $('hello').textContent = 'Hello, ' + Auth.name + '. Pick a book and start reading.';
+  let books = [], cat = 'All';
+
+  function render() {
+    const q = $('search').value.trim().toLowerCase();
+    const shown = books.filter(b => (cat === 'All' || b.category === cat) &&
+      (b.title + ' ' + b.author).toLowerCase().includes(q));
+    const order = $('sort').value;
+    shown.sort((x, y) => order === 'new' ? y.id - x.id : order === 'za' ? y.title.localeCompare(x.title) : x.title.localeCompare(y.title));
+    $('count').textContent = 'Showing ' + shown.length + ' of ' + books.length + ' books';
+    $('grid').innerHTML = shown.length ? shown.map(b => `
+      <article class="book">
+        <div class="cover" style="--h:${hue(b.title)}; ${b.image
+? 'background-image:' + esc(cssUrl(b.image)) + '; background-size:cover; background-position:center;'
+: ''}">${b.image ? '' : '<span>' + esc(b.title) + '</span>'}</div>
+        <div class="meta"><h3>${esc(b.title)}</h3><p>${esc(b.author)}</p>
+          ${b.category ? '<span class="tag">' + esc(b.category) + '</span>' : ''}</div>
+        ${b.has_pdf ? '<button class="btn" data-id="' + b.id + '">Read PDF</button>'
+                    : '<span class="muted">PDF coming soon</span>'}
+      </article>`).join('')
+      : '<p class="empty">No books match your search. Try different words.</p>';
+  }
+
+  function renderChips() {
+    const cats = ['All', ...new Set(books.map(b => b.category).filter(Boolean))];
+    $('chips').innerHTML = cats.map(c =>
+      `<button class="chip" aria-pressed="${c === cat}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
+  }
+
+  $('chips').addEventListener('click', e => {
+    if (e.target.dataset.cat) { cat = e.target.dataset.cat; renderChips(); render(); }
+  });
+  $('grid').addEventListener('click', e => {
+    if (e.target.dataset.id) openPdf(e.target.dataset.id);
+  });
+  $('search').addEventListener('input', render);
+  $('sort').addEventListener('change', render);
+
+  api('/api/books').then(r => r.json()).then(data => { books = data; renderChips(); render(); })
+    .catch(e => toast(e.message, true));
+</script>
+</body>
+</html>

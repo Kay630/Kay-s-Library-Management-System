@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in - Library</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="member auth" data-portal="member">
+<main class="auth-wrap">
+  <div class="auth-card">
+    <div class="logo">Library</div>
+    <h1 id="title">Welcome back</h1>
+    <p class="muted">Read books from your browser, any time.</p>
+    <form id="login-form">
+      <label>Email<input id="email" type="email" placeholder="name@email.com" required autocomplete="email"></label>
+      <label>Password<input id="password" type="password" required autocomplete="current-password"></label>
+      <button class="btn" type="submit">Log in</button>
+    </form>
+    <form id="signup-form" hidden>
+      <label>Name<input id="s-name" required autocomplete="name"></label>
+      <label>Email<input id="s-email" type="email" placeholder="name@email.com" required autocomplete="email"></label>
+      <label>Password (8+ characters)<input id="s-password" type="password" minlength="8" required autocomplete="new-password"></label>
+      <button class="btn" type="submit">Create account</button>
+    </form>
+    <p class="error" id="error" role="alert"></p>
+    <p class="switch"><button class="btn link" type="button" id="switch">New here? Create an account</button></p>
+    <p class="switch sub"><a href="../admin/login.html">Library staff? Admin log in</a></p>
+  </div>
+</main>
+<script src="../js/config.js"></script>
+<script src="../js/mock-api.js"></script>
+<script src="../js/common.js"></script>
+<script src="../js/login.js"></script>
+</body>
+</html>

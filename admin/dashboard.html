@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin - Library</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="admin">
+<div class="shell">
+  <aside class="side">
+    <div class="logo">Library<small>Admin</small></div>
+    <nav><a href="#overview">Overview</a><a href="#books">Books</a><a href="#members">Members</a></nav>
+    <span class="muted" id="who"></span>
+    <button class="btn ghost sm" onclick="logout()">Log out</button>
+  </aside>
+  <main class="main">
+    <section id="overview">
+      <h1>Overview</h1>
+      <div class="stats">
+        <div class="stat"><span>Books</span><strong id="s-books">0</strong></div>
+        <div class="stat"><span>PDFs uploaded</span><strong id="s-pdfs">0</strong></div>
+        <div class="stat"><span>Members</span><strong id="s-members">0</strong></div>
+      </div>
+    </section>
+    <section id="books">
+      <div class="head"><h2>Books</h2><input class="search" type="search" id="book-search" placeholder="Search books" aria-label="Search books"><button class="btn" id="add">Upload book</button></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Title</th><th>Author</th><th>Category</th><th>PDF</th><th>Actions</th></tr></thead>
+        <tbody id="book-rows"></tbody>
+      </table></div>
+    </section>
+    <section id="members">
+      <div class="head"><h2>Members</h2><input class="search" type="search" id="member-search" placeholder="Search members" aria-label="Search members"></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Email</th><th>Joined</th></tr></thead>
+        <tbody id="member-rows"></tbody>
+      </table></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="dlg">
+  <form id="form">
+    <h2 id="dlg-title">Upload book</h2>
+    <label>Title<input id="f-title" required></label>
+    <label>Author<input id="f-author" required></label>
+    <label>Category (optional)<input id="f-cat" placeholder="Programming, Fiction, History"></label>
+    <label>PDF file<input id="f-pdf" type="file" accept="application/pdf"></label>
+    <label>Cover image <input id="f-img" type="file" accept="image/*"></label>
+    <p class="muted" id="pdf-hint">PDF only, up to 25 MB. Covers: JPG, PNG, WEBP or GIF, up to 5 MB. Only upload books you have the right to share.</p>
+    <p class="error" id="form-error" role="alert"></p>
+    <div class="form-actions">
+      <button class="btn ghost" type="button" id="cancel">Cancel</button>
+      <button class="btn" type="submit" id="save">Save book</button>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="../js/config.js"></script>
+<script src="../js/mock-api.js"></script>
+<script src="../js/common.js"></script>
+<script>
+  guard();
+  $('who').textContent = Auth.name;
+  let books = [], members = [], editing = null;
+
+  async function load() {
+    try {
+      const get = u => api(u).then(r => r.json());
+      const [s, b, m] = await Promise.all([get('/api/admin/stats'), get('/api/books'), get('/api/admin/members')]);
+      books = b; members = m;
+      $('s-books').textContent = s.books; $('s-pdfs').textContent = s.pdfs; $('s-members').textContent = s.members;
+      renderBooks(); renderMembers();
+    } catch (e) { toast(e.message, true); }
+  }
+
+  function renderBooks() {
+    const q = $('book-search').value.trim().toLowerCase();
+    const list = books.filter(x => (x.title + ' ' + x.author + ' ' + (x.category || '')).toLowerCase().includes(q));
+    $('book-rows').innerHTML = list.length ? list.map(x => `<tr>
+        <td><strong>${esc(x.title)}</strong></td><td>${esc(x.author)}</td><td>${esc(x.category || '')}</td>
+        <td><span class="badge ${x.has_pdf ? 'ok' : 'no'}">${x.has_pdf ? 'Uploaded' : 'Missing'}</span></td>
+        <td><div class="acts" data-id="${x.id}">
+          ${x.has_pdf ? '<button class="btn ghost sm" data-act="view">View</button>' : ''}
+          <button class="btn ghost sm" data-act="edit">Edit</button>
+          <button class="btn danger sm" data-act="delete">Delete</button></div></td></tr>`).join('')
+        : '<tr><td colspan="5" class="muted">' + (q ? 'No books match your search.' : 'No books yet. Choose Upload book to add the first one.') + '</td></tr>';
+  }
+
+  function renderMembers() {
+    const q = $('member-search').value.trim().toLowerCase();
+    const list = members.filter(x => (x.name + ' ' + x.email).toLowerCase().includes(q));
+    $('member-rows').innerHTML = list.length ? list.map(x => `<tr><td>${esc(x.name)}</td><td>${esc(x.email)}</td>
+        <td>${esc((x.created_at || '').slice(0, 10))}</td></tr>`).join('')
+        : '<tr><td colspan="3" class="muted">' + (q ? 'No members match your search.' : 'No members yet.') + '</td></tr>';
+  }
+
+  $('book-search').addEventListener('input', renderBooks);
+  $('member-search').addEventListener('input', renderMembers);
+
+  // Highlight the sidebar link for the section being viewed
+  const links = [...document.querySelectorAll('.side nav a')];
+  const watcher = new IntersectionObserver(entries => entries.forEach(en => {
+    if (en.isIntersecting) links.forEach(a => a.classList.toggle('on', a.hash === '#' + en.target.id));
+  }), { rootMargin: '-40% 0px -55% 0px' });
+  document.querySelectorAll('main section').forEach(sec => watcher.observe(sec));
+
+  function openForm(book) {
+    editing = book ? book.id : null;
+    $('dlg-title').textContent = book ? 'Edit book' : 'Upload book';
+    $('f-title').value = book ? book.title : '';
+    $('f-author').value = book ? book.author : '';
+    $('f-cat').value = book ? book.category || '' : '';
+    $('f-pdf').value = '';
+    $('f-img').value = '';
+    $('pdf-hint').textContent = book && book.has_pdf
+      ? 'Leave empty to keep the current PDF, or choose a new one to replace it.'
+      : 'PDF only, up to 25 MB. Covers: JPG, PNG, WEBP or GIF, up to 5 MB. Only upload books you have the right to share.';
+    $('form-error').textContent = '';
+    $('dlg').showModal();
+  }
+
+  $('add').addEventListener('click', () => openForm(null));
+  $('cancel').addEventListener('click', () => $('dlg').close());
+
+  $('book-rows').addEventListener('click', async e => {
+    const act = e.target.dataset.act;
+    if (!act) return;
+    const id = Number(e.target.closest('.acts').dataset.id);
+    const book = books.find(b => b.id === id);
+    if (act === 'view') openPdf(id);
+    if (act === 'edit') openForm(book);
+    if (act === 'delete' && confirm('Delete "' + book.title + '" and its PDF? This cannot be undone.')) {
+      try { await api('/api/books/' + id, { method: 'DELETE' }); toast('Book deleted'); load(); }
+      catch (ex) { toast(ex.message, true); }
+    }
+  });
+
+  $('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const err = $('form-error'), btn = $('save'), file = $('f-pdf').files[0];
+    err.textContent = '';
+    if (file && file.type !== 'application/pdf') { err.textContent = 'Choose a PDF file.'; return; }
+    if (file && file.size > 25 * 1024 * 1024) { err.textContent = 'The PDF must be under 25 MB.'; return; }
+    const cover = $('f-img').files[0];
+    if (cover && cover.size > 5 * 1024 * 1024) { err.textContent = 'The cover image must be under 5 MB.'; return; }
+    const fd = new FormData();
+    fd.append('title', $('f-title').value);
+    fd.append('author', $('f-author').value);
+    fd.append('category', $('f-cat').value);
+    if (file) fd.append('pdf', file);
+    const img = $('f-img').files[0]; if (img) fd.append('image', img);
+    btn.textContent = 'Saving…'; btn.disabled = true;
+    try {
+      await api(editing ? '/api/books/' + editing : '/api/books', { method: editing ? 'PUT' : 'POST', body: fd });
+      $('dlg').close();
+      toast(editing ? 'Book updated' : 'Book added');
+      load();
+    } catch (ex) { err.textContent = ex.message; }
+    finally { btn.textContent = 'Save book'; btn.disabled = false; }
+  });
+
+  load();
+</script>
+</body>
+</html>

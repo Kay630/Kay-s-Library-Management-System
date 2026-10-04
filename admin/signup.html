@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin sign up - Library</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="admin auth">
+<main class="auth-wrap">
+  <div class="auth-card">
+    <div class="logo">Library admin</div>
+    <h1>Create admin account</h1>
+    <p class="muted">You need the admin access code from the site owner.</p>
+    <form id="signup-form">
+      <label>Full name<input id="name" required autocomplete="name"></label>
+      <label>Email<input id="email" type="email" required autocomplete="email"></label>
+      <label>Password (8+ characters)<input id="password" type="password" minlength="8" required autocomplete="new-password"></label>
+      <label>Confirm password<input id="confirm" type="password" minlength="8" required autocomplete="new-password"></label>
+      <label>Admin access code<input id="code" required autocomplete="off"></label>
+      <p class="muted" id="code-hint" hidden></p>
+      <p class="error" id="error" role="alert"></p>
+      <button class="btn" type="submit" id="save">Create admin account</button>
+    </form>
+    <p class="switch"><a href="login.html">Already an admin? Log in</a></p>
+  </div>
+</main>
+<script src="../js/config.js"></script>
+<script src="../js/mock-api.js"></script>
+<script src="../js/common.js"></script>
+<script src="../js/admin-signup.js"></script>
+</body>
+</html>
