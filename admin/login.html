@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin log in - Library</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="admin auth" data-portal="admin">
+<main class="auth-wrap">
+  <div class="auth-card">
+    <div class="logo">Library admin</div>
+    <h1>Staff log in</h1>
+    <p class="muted">Manage books and members.</p>
+    <form id="login-form">
+      <label>Email<input id="email" type="email" required autocomplete="email"></label>
+      <label>Password<input id="password" type="password" required autocomplete="current-password"></label>
+      <button class="btn" type="submit">Log in</button>
+    </form>
+    <p class="error" id="error" role="alert"></p>
+    <p class="switch"><a href="signup.html">Need an admin account? Sign up</a></p>
+    <p class="switch sub"><a href="../member/login.html">Go to the member site</a></p>
+  </div>
+</main>
+<script src="../js/config.js"></script>
+<script src="../js/mock-api.js"></script>
+<script src="../js/common.js"></script>
+<script src="../js/login.js"></script>
+</body>
+</html>
